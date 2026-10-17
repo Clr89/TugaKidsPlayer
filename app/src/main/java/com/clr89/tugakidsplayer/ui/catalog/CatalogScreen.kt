@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -35,20 +38,24 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.clr89.tugakidsplayer.data.DemoMovieCatalog
 import com.clr89.tugakidsplayer.data.model.Movie
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.URL
 
 @Composable
-fun CatalogScreen(onMovieSelected: (Movie) -> Unit) {
+fun CatalogScreen(
+    state: CatalogUiState,
+    onMovieSelected: (Movie) -> Unit,
+    onRetry: () -> Unit,
+    onUseDemoCatalog: () -> Unit,
+) {
     var query by remember { mutableStateOf("") }
-    // Filtering is local and immediate, so typing and remote keyboard input behave alike.
-    val filteredMovies = remember(query) {
+    val movies = (state as? CatalogUiState.Content)?.movies.orEmpty()
+    // Search stays local and applies identically to remote and explicitly selected demo movies.
+    val filteredMovies = remember(query, movies) {
         val term = query.trim()
-        if (term.isEmpty()) DemoMovieCatalog.movies
-        else DemoMovieCatalog.movies.filter { it.title.contains(term, ignoreCase = true) }
+        if (term.isEmpty()) movies else movies.filter { it.title.contains(term, ignoreCase = true) }
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { contentPadding ->
@@ -67,22 +74,61 @@ fun CatalogScreen(onMovieSelected: (Movie) -> Unit) {
                 label = { Text("Pesquisar filmes") },
                 singleLine = true,
             )
-            if (filteredMovies.isEmpty()) {
-                Text(
-                    text = "Não foram encontrados filmes.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 160.dp),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+            when (state) {
+                CatalogUiState.Loading -> Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(filteredMovies, key = { it.id }) { movie ->
-                        MovieCard(movie, onClick = { onMovieSelected(movie) })
+                    CircularProgressIndicator()
+                    Text("A carregar o catálogo remoto…")
+                }
+                is CatalogUiState.Error -> Column(
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(state.message, color = MaterialTheme.colorScheme.error)
+                    Text("Podes tentar novamente ou abrir o catálogo de demonstração.")
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = onRetry) { Text("Tentar novamente") }
+                        Button(onClick = onUseDemoCatalog) { Text("Usar demonstração") }
+                    }
+                }
+                is CatalogUiState.Content -> {
+                    if (state.isDemo) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "A mostrar o catálogo de demonstração.",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Button(onClick = onRetry) { Text("Tentar catálogo remoto") }
+                        }
+                    }
+                    when {
+                        movies.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("O catálogo remoto não contém filmes.")
+                            Button(onClick = onUseDemoCatalog) { Text("Usar demonstração") }
+                        }
+                        filteredMovies.isEmpty() -> Text(
+                            text = "Não foram encontrados filmes.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                        else -> LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 160.dp),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 20.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(filteredMovies, key = { it.id }) { movie ->
+                                MovieCard(movie, onClick = { onMovieSelected(movie) })
+                            }
+                        }
                     }
                 }
             }
