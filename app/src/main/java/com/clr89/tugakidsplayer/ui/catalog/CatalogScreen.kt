@@ -3,6 +3,7 @@ package com.clr89.tugakidsplayer.ui.catalog
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +42,7 @@ import kotlinx.coroutines.withContext
 import java.net.URL
 
 @Composable
-fun CatalogScreen() {
+fun CatalogScreen(onMovieSelected: (Movie) -> Unit) {
     var query by remember { mutableStateOf("") }
     // Filtering is local and immediate, so typing and remote keyboard input behave alike.
     val filteredMovies = remember(query) {
@@ -80,7 +81,9 @@ fun CatalogScreen() {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(filteredMovies, key = { it.id }) { movie -> MovieCard(movie) }
+                    items(filteredMovies, key = { it.id }) { movie ->
+                        MovieCard(movie, onClick = { onMovieSelected(movie) })
+                    }
                 }
             }
         }
@@ -88,10 +91,10 @@ fun CatalogScreen() {
 }
 
 @Composable
-private fun MovieCard(movie: Movie) {
+private fun MovieCard(movie: Movie, onClick: () -> Unit) {
     // Focusable cards provide a visible focus target for keyboard and remote navigation.
     Card(
-        modifier = Modifier.fillMaxWidth().focusable().semantics {
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).focusable().semantics {
             contentDescription = "${movie.title}, filme"
         },
         shape = RoundedCornerShape(12.dp),
