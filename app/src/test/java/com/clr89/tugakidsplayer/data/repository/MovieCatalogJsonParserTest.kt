@@ -44,6 +44,53 @@ class MovieCatalogJsonParserTest {
     }
 
     @Test
+    fun normalizesHttpUrlsForAuthorizedHostsAndPreservesTheirComponents() {
+        val movie = parseMovie(
+            thumbnail = "http://capa.tugakids.com/capas/32890033.jpg?size=large&lang=pt#cover",
+            video = "http://tkapp26.buzz/32890033.mp4?token=abc#play",
+        )
+
+        assertEquals("https://capa.tugakids.com/capas/32890033.jpg?size=large&lang=pt#cover", movie.thumbnailUrl)
+        assertEquals("https://tkapp26.buzz/32890033.mp4?token=abc#play", movie.videoUrl)
+    }
+
+    @Test
+    fun preservesValidHttpsUrls() {
+        val movie = parseMovie(
+            thumbnail = "https://capa.tugakids.com/capas/32890033.jpg?size=large",
+            video = "https://tkapp26.buzz/32890033.mp4?token=abc",
+        )
+
+        assertEquals("https://capa.tugakids.com/capas/32890033.jpg?size=large", movie.thumbnailUrl)
+        assertEquals("https://tkapp26.buzz/32890033.mp4?token=abc", movie.videoUrl)
+    }
+
+    @Test
+    fun rejectsHttpUrlsOutsideAuthorizedHosts() {
+        assertCatalogEntryRejected(
+            thumbnail = "http://other.example/capas/32890033.jpg",
+            video = "https://tkapp26.buzz/32890033.mp4",
+        )
+        assertCatalogEntryRejected(
+            thumbnail = "https://capa.tugakids.com/capas/32890033.jpg",
+            video = "http://sub.tkapp26.buzz/32890033.mp4",
+        )
+    }
+
+    @Test
+    fun rejectsMalformedUrlsAndUnsupportedSchemes() {
+        listOf("https://bad host/image.jpg", "https://example.org:bad/image.jpg", "https://", "not a URL").forEach { url ->
+            assertCatalogEntryRejected(thumbnail = url, video = "https://tkapp26.buzz/32890033.mp4")
+        }
+        listOf("ftp://tkapp26.buzz/32890033.mp4", "file:///video.mp4", "javascript:alert(1)").forEach { url ->
+            assertCatalogEntryRejected(
+                thumbnail = "https://capa.tugakids.com/capas/32890033.jpg",
+                video = url,
+            )
+        }
+    }
+
+    @Test
     fun parsesEmptyCatalogues() {
         assertTrue(MovieCatalogJsonParser.parse("[]").isEmpty())
         assertTrue(MovieCatalogJsonParser.parse("{\"movies\":[]}").isEmpty())
@@ -59,5 +106,14 @@ class MovieCatalogJsonParserTest {
                 // Expected: malformed syntax, an unsupported root, or trailing response content.
             }
         }
+    }
+
+    private fun parseMovie(thumbnail: String, video: String) = MovieCatalogJsonParser.parse(
+        """[{"title":"Filme","thumbnail":"$thumbnail","externallink":"$video"}]""",
+    ).single()
+
+    private fun assertCatalogEntryRejected(thumbnail: String, video: String) {
+        val json = """[{"title":"Filme","thumbnail":"$thumbnail","externallink":"$video"}]"""
+        assertTrue(MovieCatalogJsonParser.parse(json).isEmpty())
     }
 }

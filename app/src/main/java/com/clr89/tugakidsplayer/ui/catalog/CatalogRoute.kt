@@ -1,5 +1,6 @@
 package com.clr89.tugakidsplayer.ui.catalog
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -8,8 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.clr89.tugakidsplayer.data.DemoMovieCatalog
-import com.clr89.tugakidsplayer.data.repository.RemoteMovieCatalogRepository
 import com.clr89.tugakidsplayer.data.model.Movie
+import com.clr89.tugakidsplayer.data.repository.CatalogLoadException
+import com.clr89.tugakidsplayer.data.repository.RemoteMovieCatalogRepository
 import kotlinx.coroutines.CancellationException
 
 sealed interface CatalogUiState {
@@ -18,9 +20,12 @@ sealed interface CatalogUiState {
     data class Error(val message: String) : CatalogUiState
 }
 
-/** Owns loading/retry state while CatalogScreen remains focused on rendering and search. */
 @Composable
-fun CatalogRoute(onMovieSelected: (Movie) -> Unit) {
+fun CatalogRoute(
+    onMovieSelected: (Movie) -> Unit,
+    posterSize: CatalogPosterSize,
+    onPosterSizeChange: (CatalogPosterSize) -> Unit,
+) {
     val repository = remember { RemoteMovieCatalogRepository() }
     var retryKey by remember { mutableIntStateOf(0) }
     var state by remember { mutableStateOf<CatalogUiState>(CatalogUiState.Loading) }
@@ -28,12 +33,15 @@ fun CatalogRoute(onMovieSelected: (Movie) -> Unit) {
     LaunchedEffect(retryKey) {
         state = CatalogUiState.Loading
         state = try {
-            CatalogUiState.Content(repository.loadMovies())
+            val movies = repository.loadMovies()
+            CatalogUiState.Content(movies)
         } catch (cancelled: CancellationException) {
             throw cancelled
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.e("CatalogRoute", "Falha ao carregar catÃ¡logo (${error.javaClass.simpleName})", error)
             CatalogUiState.Error(
-                "Não foi possível carregar o catálogo remoto. Verifica a ligação e o endereço configurado.",
+                (error as? CatalogLoadException)?.message
+                    ?: "Falha inesperada ao carregar o catÃ¡logo. Consulta o registo CatalogRoute para diagnÃ³stico.",
             )
         }
     }
@@ -43,8 +51,9 @@ fun CatalogRoute(onMovieSelected: (Movie) -> Unit) {
         onMovieSelected = onMovieSelected,
         onRetry = { retryKey++ },
         onUseDemoCatalog = {
-            // Demo data is shown only after an explicit user choice, never as a silent fallback.
             state = CatalogUiState.Content(DemoMovieCatalog.movies, isDemo = true)
         },
+        posterSize = posterSize,
+        onPosterSizeChange = onPosterSizeChange,
     )
 }

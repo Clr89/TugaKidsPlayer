@@ -1,6 +1,7 @@
 package com.clr89.tugakidsplayer.ui.catalog
 
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,6 +53,8 @@ fun CatalogScreen(
     onMovieSelected: (Movie) -> Unit,
     onRetry: () -> Unit,
     onUseDemoCatalog: () -> Unit,
+    posterSize: CatalogPosterSize,
+    onPosterSizeChange: (CatalogPosterSize) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
     val movies = (state as? CatalogUiState.Content)?.movies.orEmpty()
@@ -57,16 +63,29 @@ fun CatalogScreen(
         val term = query.trim()
         if (term.isEmpty()) movies else movies.filter { it.title.contains(term, ignoreCase = true) }
     }
-
     Scaffold(modifier = Modifier.fillMaxSize()) { contentPadding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(contentPadding).padding(horizontal = 20.dp),
         ) {
-            Text(
-                text = "Filmes",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(top = 20.dp, bottom = 12.dp),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = "Filmes", style = MaterialTheme.typography.headlineMedium)
+                var sizeMenuOpen by remember { mutableStateOf(false) }
+                Box {
+                    TextButton(onClick = { sizeMenuOpen = true }) { Text("PÃ³steres: ${posterSize.label} â–¾") }
+                    DropdownMenu(expanded = sizeMenuOpen, onDismissRequest = { sizeMenuOpen = false }) {
+                        CatalogPosterSize.entries.forEach { size ->
+                            DropdownMenuItem(
+                                text = { Text(if (posterSize == size) "âœ“ ${size.label}" else size.label) },
+                                onClick = { onPosterSizeChange(size); sizeMenuOpen = false },
+                            )
+                        }
+                    }
+                }
+            }
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -81,17 +100,17 @@ fun CatalogScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     CircularProgressIndicator()
-                    Text("A carregar o catálogo remoto…")
+                    Text("A carregar o catÃ¡logo remotoâ€¦")
                 }
                 is CatalogUiState.Error -> Column(
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(state.message, color = MaterialTheme.colorScheme.error)
-                    Text("Podes tentar novamente ou abrir o catálogo de demonstração.")
+                    Text("Podes tentar novamente ou abrir o catÃ¡logo de demonstraÃ§Ã£o.")
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = onRetry) { Text("Tentar novamente") }
-                        Button(onClick = onUseDemoCatalog) { Text("Usar demonstração") }
+                        Button(onClick = onUseDemoCatalog) { Text("Usar demonstraÃ§Ã£o") }
                     }
                 }
                 is CatalogUiState.Content -> {
@@ -102,31 +121,34 @@ fun CatalogScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = "A mostrar o catálogo de demonstração.",
+                                text = "A mostrar o catÃ¡logo de demonstraÃ§Ã£o.",
                                 style = MaterialTheme.typography.bodyMedium,
                             )
-                            Button(onClick = onRetry) { Text("Tentar catálogo remoto") }
+                            Button(onClick = onRetry) { Text("Tentar catÃ¡logo remoto") }
                         }
                     }
                     when {
                         movies.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("O catálogo remoto não contém filmes.")
-                            Button(onClick = onUseDemoCatalog) { Text("Usar demonstração") }
+                            Text("O catÃ¡logo remoto nÃ£o contÃ©m filmes.")
+                            Button(onClick = onUseDemoCatalog) { Text("Usar demonstraÃ§Ã£o") }
                         }
                         filteredMovies.isEmpty() -> Text(
-                            text = "Não foram encontrados filmes.",
+                            text = "NÃ£o foram encontrados filmes.",
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(top = 12.dp),
                         )
                         else -> LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 160.dp),
+                            columns = GridCells.Adaptive(minSize = posterSize.minCellWidth),
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 20.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             items(filteredMovies, key = { it.id }) { movie ->
-                                MovieCard(movie, onClick = { onMovieSelected(movie) })
+                                MovieCard(
+                                    movie,
+                                    onClick = { onMovieSelected(movie) },
+                                )
                             }
                         }
                     }
@@ -137,7 +159,10 @@ fun CatalogScreen(
 }
 
 @Composable
-private fun MovieCard(movie: Movie, onClick: () -> Unit) {
+private fun MovieCard(
+    movie: Movie,
+    onClick: () -> Unit,
+) {
     // Focusable cards provide a visible focus target for keyboard and remote navigation.
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).focusable().semantics {
@@ -169,7 +194,7 @@ private fun RemoteThumbnail(url: String, title: String) {
         }
     }
     Box(
-        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+        modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
@@ -178,11 +203,11 @@ private fun RemoteThumbnail(url: String, title: String) {
             Image(
                 bitmap = image.asImageBitmap(),
                 contentDescription = "Miniatura de $title",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            Text(text = "Miniatura indisponível", style = MaterialTheme.typography.bodySmall)
+            Text(text = "Miniatura indisponÃ­vel", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
