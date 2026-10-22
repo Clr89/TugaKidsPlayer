@@ -59,10 +59,7 @@ fun CatalogScreen(
     var query by remember { mutableStateOf("") }
     val movies = (state as? CatalogUiState.Content)?.movies.orEmpty()
     // Search stays local and applies identically to remote and explicitly selected demo movies.
-    val filteredMovies = remember(query, movies) {
-        val term = query.trim()
-        if (term.isEmpty()) movies else movies.filter { it.title.contains(term, ignoreCase = true) }
-    }
+    val filteredMovies = remember(query, movies) { movies.filter { it.title.matchesSearch(query) } }
     Scaffold(modifier = Modifier.fillMaxSize()) { contentPadding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(contentPadding).padding(horizontal = 20.dp),
@@ -75,11 +72,11 @@ fun CatalogScreen(
                 Text(text = "Filmes", style = MaterialTheme.typography.headlineMedium)
                 var sizeMenuOpen by remember { mutableStateOf(false) }
                 Box {
-                    TextButton(onClick = { sizeMenuOpen = true }) { Text("PÃ³steres: ${posterSize.label} â–¾") }
+                    TextButton(onClick = { sizeMenuOpen = true }) { Text("Pósteres: ${posterSize.label} ▾") }
                     DropdownMenu(expanded = sizeMenuOpen, onDismissRequest = { sizeMenuOpen = false }) {
                         CatalogPosterSize.entries.forEach { size ->
                             DropdownMenuItem(
-                                text = { Text(if (posterSize == size) "âœ“ ${size.label}" else size.label) },
+                                text = { Text(if (posterSize == size) "✓ ${size.label}" else size.label) },
                                 onClick = { onPosterSizeChange(size); sizeMenuOpen = false },
                             )
                         }
@@ -100,17 +97,17 @@ fun CatalogScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     CircularProgressIndicator()
-                    Text("A carregar o catÃ¡logo remotoâ€¦")
+                    Text("A carregar o catálogo remoto…")
                 }
                 is CatalogUiState.Error -> Column(
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(state.message, color = MaterialTheme.colorScheme.error)
-                    Text("Podes tentar novamente ou abrir o catÃ¡logo de demonstraÃ§Ã£o.")
+                    Text("Podes tentar novamente ou abrir o catálogo de demonstração.")
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = onRetry) { Text("Tentar novamente") }
-                        Button(onClick = onUseDemoCatalog) { Text("Usar demonstraÃ§Ã£o") }
+                        Button(onClick = onUseDemoCatalog) { Text("Usar demonstração") }
                     }
                 }
                 is CatalogUiState.Content -> {
@@ -121,19 +118,19 @@ fun CatalogScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = "A mostrar o catÃ¡logo de demonstraÃ§Ã£o.",
+                                text = "A mostrar o catálogo de demonstração.",
                                 style = MaterialTheme.typography.bodyMedium,
                             )
-                            Button(onClick = onRetry) { Text("Tentar catÃ¡logo remoto") }
+                            Button(onClick = onRetry) { Text("Tentar catálogo remoto") }
                         }
                     }
                     when {
                         movies.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("O catÃ¡logo remoto nÃ£o contÃ©m filmes.")
-                            Button(onClick = onUseDemoCatalog) { Text("Usar demonstraÃ§Ã£o") }
+                            Text("O catálogo remoto não contém filmes.")
+                            Button(onClick = onUseDemoCatalog) { Text("Usar demonstração") }
                         }
                         filteredMovies.isEmpty() -> Text(
-                            text = "NÃ£o foram encontrados filmes.",
+                            text = "Não foram encontrados filmes.",
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.padding(top = 12.dp),
                         )
@@ -207,7 +204,7 @@ private fun RemoteThumbnail(url: String, title: String) {
                 modifier = Modifier.fillMaxSize(),
             )
         } else {
-            Text(text = "Miniatura indisponÃ­vel", style = MaterialTheme.typography.bodySmall)
+            Text(text = "Miniatura indisponível", style = MaterialTheme.typography.bodySmall)
         }
     }
 }

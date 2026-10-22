@@ -31,16 +31,16 @@ class MovieCatalogJsonParserTest {
             [
               {"title":"Sem miniatura","externallink":"https://example.org/a.mp4"},
               {"title":"   ","thumbnail":"https://example.org/b.jpg","externallink":"https://example.org/b.mp4"},
-              {"title":"Sem vÃ­deo","thumbnail":"https://example.org/c.jpg"},
-              {"title":"HTTP nÃ£o permitido","thumbnail":"http://example.org/d.jpg","externallink":"https://example.org/d.mp4"},
-              {"title":"VÃ¡lido","thumbnail":"https://example.org/e.jpg","externallink":"https://example.org/e.mp4"}
+              {"title":"Sem vídeo","thumbnail":"https://example.org/c.jpg"},
+              {"title":"HTTP não permitido","thumbnail":"http://example.org/d.jpg","externallink":"https://example.org/d.mp4"},
+              {"title":"Válido","thumbnail":"https://example.org/e.jpg","externallink":"https://example.org/e.mp4"}
             ]
         """.trimIndent()
 
         val movies = MovieCatalogJsonParser.parse(json)
 
         assertEquals(1, movies.size)
-        assertEquals("VÃ¡lido", movies.single().title)
+        assertEquals("Válido", movies.single().title)
     }
 
     @Test

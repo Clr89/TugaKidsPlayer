@@ -23,14 +23,14 @@ class RemoteMovieCatalogRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : MovieCatalogRepository {
     override suspend fun loadMovies(): List<Movie> = withContext(ioDispatcher) {
-        val safeEndpoint = runCatching { URL(catalogUrl).let { "${it.host}${it.path}" } }.getOrDefault("endpoint invÃ¡lido")
+        val safeEndpoint = runCatching { URL(catalogUrl).let { "${it.host}${it.path}" } }.getOrDefault("endpoint inválido")
         val connection = try {
             URL(catalogUrl).openConnection() as? HttpsURLConnection
-                ?: throw CatalogLoadException(CatalogFailure.CONFIGURATION, "O endereÃ§o do catÃ¡logo tem de usar HTTPS.")
+                ?: throw CatalogLoadException(CatalogFailure.CONFIGURATION, "O endereço do catálogo tem de usar HTTPS.")
         } catch (error: CatalogLoadException) { throw error }
         catch (error: Exception) {
-            Log.e(TAG, "URL do catÃ¡logo invÃ¡lido ($safeEndpoint)", error)
-            throw CatalogLoadException(CatalogFailure.CONFIGURATION, "O endereÃ§o do catÃ¡logo Ã© invÃ¡lido.", error)
+            Log.e(TAG, "URL do catálogo inválido ($safeEndpoint)", error)
+            throw CatalogLoadException(CatalogFailure.CONFIGURATION, "O endereço do catálogo é inválido.", error)
         }
         try {
             connection.connectTimeout = CONNECT_TIMEOUT_MS
@@ -41,25 +41,25 @@ class RemoteMovieCatalogRepository(
 
             val responseCode = try { connection.responseCode } catch (error: Exception) {
                 Log.e(TAG, "Falha de rede/TLS ao contactar $safeEndpoint (${error.javaClass.simpleName})", error)
-                throw CatalogLoadException(CatalogFailure.NETWORK, "Falha de rede ou TLS ao contactar o catÃ¡logo. Verifica a ligaÃ§Ã£o, a data/hora e o certificado do servidor.", error)
+                throw CatalogLoadException(CatalogFailure.NETWORK, "Falha de rede ou TLS ao contactar o catálogo. Verifica a ligação, a data/hora e o certificado do servidor.", error)
             }
             val contentType = connection.contentType?.substringBefore(';') ?: "ausente"
-            Log.i(TAG, "Resposta do catÃ¡logo: endpoint=$safeEndpoint http=$responseCode contentType=$contentType")
+            Log.i(TAG, "Resposta do catálogo: endpoint=$safeEndpoint http=$responseCode contentType=$contentType")
             if (responseCode !in 200..299) {
-                throw CatalogLoadException(CatalogFailure.HTTP, "O servidor do catÃ¡logo respondeu com HTTP $responseCode.")
+                throw CatalogLoadException(CatalogFailure.HTTP, "O servidor do catálogo respondeu com HTTP $responseCode.")
             }
 
             val response = try { connection.inputStream.use(::readBoundedResponse) }
             catch (error: CatalogLoadException) { throw error }
             catch (error: Exception) {
-                Log.e(TAG, "Falha ao ler corpo do catÃ¡logo ($safeEndpoint, ${error.javaClass.simpleName})", error)
-                throw CatalogLoadException(CatalogFailure.NETWORK, "A ligaÃ§Ã£o foi iniciada, mas nÃ£o foi possÃ­vel ler a resposta do catÃ¡logo.", error)
+                Log.e(TAG, "Falha ao ler corpo do catálogo ($safeEndpoint, ${error.javaClass.simpleName})", error)
+                throw CatalogLoadException(CatalogFailure.NETWORK, "A ligação foi iniciada, mas não foi possível ler a resposta do catálogo.", error)
             }
             try {
                 MovieCatalogJsonParser.parse(response)
             } catch (error: JSONException) {
-                Log.e(TAG, "JSON invÃ¡lido recebido de $safeEndpoint (contentType=$contentType, bytes=${response.toByteArray(Charsets.UTF_8).size})", error)
-                throw CatalogLoadException(CatalogFailure.PARSING, "O servidor respondeu, mas o conteÃºdo recebido nÃ£o Ã© um catÃ¡logo JSON vÃ¡lido.", error)
+                Log.e(TAG, "JSON inválido recebido de $safeEndpoint (contentType=$contentType, bytes=${response.toByteArray(Charsets.UTF_8).size})", error)
+                throw CatalogLoadException(CatalogFailure.PARSING, "O servidor respondeu, mas o conteúdo recebido não é um catálogo JSON válido.", error)
             }
         } finally {
             connection.disconnect()
@@ -72,7 +72,7 @@ class RemoteMovieCatalogRepository(
         while (true) {
             val count = input.read(buffer)
             if (count < 0) break
-            if (output.size() + count > MAX_RESPONSE_BYTES) throw IOException("O ficheiro do catÃ¡logo excede o tamanho permitido.")
+            if (output.size() + count > MAX_RESPONSE_BYTES) throw IOException("O ficheiro do catálogo excede o tamanho permitido.")
             output.write(buffer, 0, count)
         }
         return output.toString(Charsets.UTF_8.name())

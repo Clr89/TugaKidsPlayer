@@ -38,10 +38,10 @@ fun CatalogRoute(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            Log.e("CatalogRoute", "Falha ao carregar catÃ¡logo (${error.javaClass.simpleName})", error)
+            Log.e("CatalogRoute", "Falha ao carregar catálogo (${error.javaClass.simpleName})", error)
             CatalogUiState.Error(
                 (error as? CatalogLoadException)?.message
-                    ?: "Falha inesperada ao carregar o catÃ¡logo. Consulta o registo CatalogRoute para diagnÃ³stico.",
+                    ?: "Falha inesperada ao carregar o catálogo. Consulta o registo CatalogRoute para diagnóstico.",
             )
         }
     }
