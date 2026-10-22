@@ -12,6 +12,8 @@ import com.clr89.tugakidsplayer.data.DemoMovieCatalog
 import com.clr89.tugakidsplayer.data.model.Movie
 import com.clr89.tugakidsplayer.data.repository.CatalogLoadException
 import com.clr89.tugakidsplayer.data.repository.RemoteMovieCatalogRepository
+import com.clr89.tugakidsplayer.data.repository.PublishedRelease
+import com.clr89.tugakidsplayer.data.repository.ReleaseCheckResult
 import kotlinx.coroutines.CancellationException
 
 sealed interface CatalogUiState {
@@ -24,6 +26,17 @@ sealed interface CatalogUiState {
 fun CatalogRoute(
     onMovieSelected: (Movie) -> Unit,
     posterSize: CatalogPosterSize,
+    darkTheme: Boolean,
+    onToggleTheme: () -> Unit,
+    installedVersion: String,
+    updateState: ReleaseCheckResult,
+    showUpdateDialog: Boolean,
+    onCheckUpdates: () -> Unit,
+    onDismissUpdate: (PublishedRelease) -> Unit,
+    onViewUpdate: (PublishedRelease) -> Unit,
+    onOpenRepository: () -> Unit,
+    onOpenWebsite: () -> Unit,
+    onOpenContact: () -> Unit,
     onPosterSizeChange: (CatalogPosterSize) -> Unit,
 ) {
     val repository = remember { RemoteMovieCatalogRepository() }
@@ -54,6 +67,17 @@ fun CatalogRoute(
             state = CatalogUiState.Content(DemoMovieCatalog.movies, isDemo = true)
         },
         posterSize = posterSize,
+        darkTheme = darkTheme,
+        onToggleTheme = onToggleTheme,
+        installedVersion = installedVersion,
+        updateState = updateState,
+        showUpdateDialog = showUpdateDialog,
+        onCheckUpdates = onCheckUpdates,
+        onDismissUpdate = onDismissUpdate,
+        onViewUpdate = onViewUpdate,
+        onOpenRepository = onOpenRepository,
+        onOpenWebsite = onOpenWebsite,
+        onOpenContact = onOpenContact,
         onPosterSizeChange = onPosterSizeChange,
     )
 }

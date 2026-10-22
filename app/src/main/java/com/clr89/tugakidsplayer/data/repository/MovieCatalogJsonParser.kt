@@ -43,6 +43,15 @@ object MovieCatalogJsonParser {
             title = title,
             thumbnailUrl = thumbnailUrl,
             videoUrl = videoUrl,
+            year = when (val rawYear = opt("year")) {
+                is Number -> rawYear.toDouble().takeIf { it.isFinite() && it % 1.0 == 0.0 }
+                    ?.toInt()?.takeIf { it in 1888..2099 }
+                is String -> rawYear.trim().takeIf { it.matches(Regex("\\d{4}")) }
+                    ?.toIntOrNull()?.takeIf { it in 1888..2099 }
+                else -> null
+            },
+            ageRating = (opt("ageRating") as? String)?.trim()
+                ?.takeIf { it.matches(Regex("(?i)M/\\d{1,2}")) },
         )
     }
 

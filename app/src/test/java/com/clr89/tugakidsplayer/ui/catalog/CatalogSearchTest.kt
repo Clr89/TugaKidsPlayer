@@ -36,6 +36,22 @@ class CatalogSearchTest {
         assertEquals("ação", original)
     }
 
+    @Test
+    fun expandableSearchOpensKeepsQueryOnClearAndClosesWithFullCatalogueQuery() {
+        val opened = CatalogSearchState().open()
+        assertTrue(opened.isExpanded)
+        assertEquals("aventura", opened.updateQuery("aventura").query)
+
+        val cleared = opened.updateQuery("aventura").clearQuery()
+        assertTrue(cleared.isExpanded)
+        assertEquals("", cleared.query)
+
+        val closed = opened.updateQuery("aventura").close()
+        assertFalse(closed.isExpanded)
+        assertEquals("", closed.query)
+        assertTrue("Qualquer filme".matchesSearch(closed.query))
+    }
+
     private fun assertMatches(title: String, query: String) {
         assertTrue(title.normalizeForSearch().contains(query.normalizeForSearch()))
     }

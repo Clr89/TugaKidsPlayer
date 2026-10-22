@@ -23,6 +23,39 @@ class MovieCatalogJsonParserTest {
         assertEquals("https://example.org/poster.jpg", movie.thumbnailUrl)
         assertEquals("https://example.org/video.mp4", movie.videoUrl)
         assertEquals(movie.videoUrl, movie.id)
+        assertEquals(null, movie.year)
+        assertEquals(null, movie.ageRating)
+    }
+
+    @Test
+    fun parsesValidOptionalYearAndAgeRating() {
+        val movies = MovieCatalogJsonParser.parse(
+            """[{"title":"Filme","thumbnail":"https://example.org/poster.jpg","externallink":"https://example.org/video.mp4","year":2024,"ageRating":" M/7 "}]""",
+        )
+        assertEquals(2024, movies.single().year)
+        assertEquals("M/7", movies.single().ageRating)
+
+        val yearAsText = MovieCatalogJsonParser.parse(
+            """[{"title":"Filme","thumbnail":"https://example.org/poster.jpg","externallink":"https://example.org/video.mp4","year":"2023","ageRating":"m/12"}]""",
+        ).single()
+        assertEquals(2023, yearAsText.year)
+        assertEquals("m/12", yearAsText.ageRating)
+    }
+
+    @Test
+    fun optionalFieldsMayBeAbsentOrInvalidWithoutDroppingMovie() {
+        val movies = MovieCatalogJsonParser.parse(
+            """[
+              {"title":"Ausentes","thumbnail":"https://example.org/a.jpg","externallink":"https://example.org/a.mp4"},
+              {"title":"Inválidos","thumbnail":"https://example.org/b.jpg","externallink":"https://example.org/b.mp4","year":"20x4","ageRating":"Livre"},
+              {"title":"Fora do intervalo","thumbnail":"https://example.org/c.jpg","externallink":"https://example.org/c.mp4","year":1800,"ageRating":7},
+              {"title":"Ano fracionário","thumbnail":"https://example.org/d.jpg","externallink":"https://example.org/d.mp4","year":2024.5,"ageRating":"M/7"}
+            ]""",
+        )
+        assertEquals(4, movies.size)
+        assertTrue(movies.take(3).all { it.year == null && it.ageRating == null })
+        assertEquals(null, movies.last().year)
+        assertEquals("M/7", movies.last().ageRating)
     }
 
     @Test

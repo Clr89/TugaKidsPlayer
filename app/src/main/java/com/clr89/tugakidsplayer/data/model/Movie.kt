@@ -6,4 +6,6 @@ data class Movie(
     val title: String,
     val thumbnailUrl: String,
     val videoUrl: String,
+    val year: Int? = null,
+    val ageRating: String? = null,
 )
