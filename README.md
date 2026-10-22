@@ -1,105 +1,113 @@
 # TugaKidsPlayer
 
-App Android para ver filmes hospedados no [TugaKids](https://www.tugakids.com).
+Aplicação Android para consultar um catálogo de filmes e reproduzir os vídeos a partir dos endereços fornecidos pelas fontes.
 
 ## Funcionalidades
 
-- Catálogo remoto de filmes (JSON via HTTPS)
-- Catálogo de demonstração como fallback
-- Pesquisa local no catálogo
-- Tamanhos de póster configuráveis
-- Tema claro / escuro (com preferência persistida)
-- Player com Media3 (ExoPlayer)
-  - Modo imersivo
-  - Ajuste de imagem (fit, fill, etc.)
-  - Abrir vídeo noutra app
-  - Retoma da posição após pausa/rotação
-- Verificação de atualizações via GitHub Releases
-- Links externos restritos (segurança)
+- Catálogo de filmes
+- Pesquisa no catálogo
+- Cartazes com ano e classificação etária, quando disponíveis
+- Reprodução de vídeo
+- Tema claro e escuro
+- Ajuste do tamanho dos cartazes
+- Verificação de atualizações
+- Secção Sobre e informação legal
 
-## Requisitos
+## Requisitos de desenvolvimento
 
-- Android Studio Ladybug (ou mais recente)
-- JDK 11+
-- minSdk 24 / targetSdk 37
+Confirmados na configuração Gradle do módulo `app`:
 
-## Como construir
+- JDK 11 (`sourceCompatibility` / `targetCompatibility` = JavaVersion.VERSION_11)
+- Android SDK
+- `minSdk` 24
+- `targetSdk` 37
+- `compileSdk` 37
 
-1. Clona o repositório:
-   ```bash
-   git clone https://github.com/Clr89/TugaKidsPlayer.git
-   cd TugaKidsPlayer
-   ```
+## Compilar e executar (debug)
 
-2. Abre o projeto no Android Studio e deixa o Gradle sincronizar.
+Na raiz do projeto:
 
-3. Para builds de **debug**:
-   ```bash
-   ./gradlew assembleDebug
-   ```
-
-4. Para builds de **release** (assinados):
-   - Copia `keystore.properties.example` para `keystore.properties`
-   - Preenche com os dados do teu keystore
-   - Gera o APK/AAB:
-     ```bash
-     ./gradlew assembleRelease
-     # ou
-     ./gradlew bundleRelease
-     ```
-
-## Configuração do catálogo
-
-O endpoint do catálogo está definido em:
-
-```
-app/src/main/java/com/clr89/tugakidsplayer/data/repository/MovieCatalogConfig.kt
+```bash
+./gradlew assembleDebug
 ```
 
-Atualmente aponta para um JSON remoto servido por HTTPS. O formato esperado é um array de objetos com pelo menos:
+No Windows (PowerShell ou cmd):
 
-| Campo          | Tipo   | Obrigatório |
-|----------------|--------|-------------|
-| `id`           | string | sim         |
-| `title`        | string | sim         |
-| `thumbnailUrl` | string | sim         |
-| `videoUrl`     | string | sim         |
-| `year`         | int    | não         |
-| `ageRating`    | string | não         |
-
-## Estrutura principal
-
-```
-app/src/main/java/com/clr89/tugakidsplayer/
-├── MainActivity.kt
-├── data/
-│   ├── AppPreferences.kt
-│   ├── DemoMovieCatalog.kt
-│   ├── model/Movie.kt
-│   └── repository/
-│       ├── GitHubReleaseChecker.kt
-│       ├── MovieCatalogConfig.kt
-│       ├── MovieCatalogJsonParser.kt
-│       └── RemoteMovieCatalogRepository.kt
-└── ui/
-    ├── catalog/          # ecrã do catálogo, pesquisa, diálogos
-    ├── player/           # PlayerScreen + apresentação de vídeo
-    └── theme/
+```bat
+gradlew.bat assembleDebug
 ```
 
-## Tecnologias
+O APK de debug fica em `app/build/outputs/apk/debug/`.
 
-- Kotlin
-- Jetpack Compose + Material 3
-- Media3 (ExoPlayer)
-- DataStore Preferences
-- Coroutines
+Para instalar num dispositivo ou emulador ligado:
 
-## Contacto
+```bash
+./gradlew installDebug
+```
 
-- Site: [tugakids.com](https://www.tugakids.com)
-- Email: tugakids.com@proton.me
+## Testes unitários
 
----
+Na raiz do projeto:
 
-Projeto pessoal · Android
+```bash
+./gradlew test
+```
+
+No Windows:
+
+```bat
+gradlew.bat test
+```
+
+Os testes unitários estão em `app/src/test/`.
+
+## Build release assinada
+
+1. Prepare um keystore **fora** do repositório (ficheiros `.jks`, `.keystore` e `keystore.properties` estão no `.gitignore`).
+2. Copie `keystore.properties.example` para `keystore.properties` na raiz do projeto e preencha os campos com os dados do seu keystore.
+3. Não inclua palavras-passe, tokens nem o ficheiro `keystore.properties` no controlo de versões.
+4. Em alternativa às propriedades do ficheiro, a configuração de assinatura também aceita as variáveis de ambiente `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` e `KEY_PASSWORD`.
+5. Gere a build:
+
+```bash
+./gradlew assembleRelease
+```
+
+ou
+
+```bash
+./gradlew bundleRelease
+```
+
+Se a assinatura de release não estiver configurada, a tarefa de release falha com uma mensagem a indicar a necessidade de `keystore.properties` ou das variáveis de ambiente.
+
+## Estrutura do projeto
+
+```
+TugaKidsPlayer/
+├── app/
+│   ├── build.gradle.kts
+│   └── src/
+│       ├── main/
+│       │   ├── AndroidManifest.xml
+│       │   ├── java/com/clr89/tugakidsplayer/
+│       │   │   ├── MainActivity.kt
+│       │   │   ├── data/          # preferências, modelos, repositórios
+│       │   │   └── ui/            # catálogo, leitor, tema
+│       │   └── res/
+│       ├── test/                  # testes unitários
+│       └── androidTest/
+├── gradle/
+├── keystore.properties.example
+├── build.gradle.kts
+├── settings.gradle.kts
+└── gradlew / gradlew.bat
+```
+
+## Conteúdos de terceiros
+
+A licença GPL-3.0 aplica-se ao código-fonte deste projeto. Não concede quaisquer direitos sobre logótipos, cartazes, vídeos, marcas ou outros conteúdos de terceiros apresentados ou referenciados pela aplicação. Esses materiais pertencem aos respetivos titulares.
+
+## Licença
+
+Este projeto está licenciado sob a GNU General Public License versão 3 (GPL-3.0). O texto integral encontra-se no ficheiro [LICENSE](LICENSE).
