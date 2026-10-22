@@ -1,9 +1,7 @@
 package com.clr89.tugakidsplayer.ui.catalog
 
-import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -44,7 +42,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.contentDescription
@@ -54,9 +51,7 @@ import androidx.compose.ui.geometry.Offset
 import com.clr89.tugakidsplayer.data.model.Movie
 import com.clr89.tugakidsplayer.data.repository.PublishedRelease
 import com.clr89.tugakidsplayer.data.repository.ReleaseCheckResult
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.net.URL
+import coil3.compose.AsyncImage
 
 @Composable
 fun CatalogScreen(
@@ -352,31 +347,20 @@ private fun MovieCard(
 
 @Composable
 private fun RemoteThumbnail(url: String, title: String) {
-    var bitmap by remember(url) { mutableStateOf<android.graphics.Bitmap?>(null) }
-    LaunchedEffect(url) {
-        // Use platform networking and bitmap decoding to keep this first stage dependency-free.
-        bitmap = withContext(Dispatchers.IO) {
-            runCatching {
-                URL(url).openConnection().apply { connectTimeout = 8_000; readTimeout = 8_000 }
-                    .getInputStream().use { stream -> BitmapFactory.decodeStream(stream) }
-            }.getOrNull()
-        }
-    }
+    var loadFailed by remember(url) { mutableStateOf(false) }
     Box(
         modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
-        val image = bitmap
-        if (image != null) {
-            Image(
-                bitmap = image.asImageBitmap(),
-                contentDescription = "Miniatura de $title",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Text(text = "Miniatura indisponível", style = MaterialTheme.typography.bodySmall)
-        }
+        AsyncImage(
+            model = url,
+            contentDescription = "Miniatura de $title",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize(),
+            onError = { loadFailed = true },
+            onSuccess = { loadFailed = false },
+        )
+        if (loadFailed) Text("Miniatura indisponível", style = MaterialTheme.typography.bodySmall)
     }
 }
